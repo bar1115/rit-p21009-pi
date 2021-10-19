@@ -1,5 +1,3 @@
-
-
 class LogData(object):
 
     def __init__(self, sensorType, location, dataType, data):

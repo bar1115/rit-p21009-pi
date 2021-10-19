@@ -46,7 +46,7 @@ class SystemLogging(object):
             os.makedirs( os.path.join(self.folderName, sensor) )
 
 
-    def parseEncoding(self, encode):
+    def parseEncoding(encode):
         splitData = encode.split('>')
 
         # Section encoded input into data types
@@ -123,4 +123,110 @@ class SystemLogging(object):
         with open(os.path.join(self.folderName, sensorType,(location + "_" + dataType + ".txt")), 'a') as file:
             file.write("LOG\t" + data +"\n")
 
+
+    def generateEncoding( logData ):
+
+        encodedString = ''
+        encodeData = ''
+
+        # Section encoded input into data types
+        sensorType = LogData.getSensorType(logData)
+        location = LogData.getLocation(logData)
+        dataType = LogData.getDataType(logData)
+        data = LogData.getData(logData)
+    
+        # Determine Sensor Type (encoded)
+        if   sensorType == SystemLogging.sensors[0]:
+            encodedString += 'OB'
+        elif sensorType == SystemLogging.sensors[1]:
+            encodedString += 'SCAL'
+        elif sensorType == SystemLogging.sensors[2]:
+            encodedString += 'FSR'
+        elif sensorType == SystemLogging.sensors[3]:
+            encodedString += 'IMU'
+
+        # Add deliminitor
+        encodedString += '>'
+
+        # Determine Sensor Location (encoded)
+        if   location == 'head':
+            encodedString += 'H'
+        elif location == 'body':
+            encodedString += 'B'
+        elif location == 'chest':
+            encodedString += 'CH'
+        elif location == 'leftRib':
+            encodedString += 'LR'
+        elif location == 'rightRib':
+            encodedString += 'RR'
+        elif location == 'leftForearm':
+            encodedString += 'LF'
+        elif location == 'rightForearm':
+            encodedString += 'RF'
+        elif location == 'leftKnee':
+            encodedString += 'LK'
+        elif location == 'rightKnee':
+            encodedString += 'RK'
+        elif location == 'leftLeg':
+            encodedString += 'LL'
+        elif location == 'rightLeg':
+            encodedString += 'RL'
+
+        # Add deliminitor
+        encodedString += '>'
+
+        # Determine Data Type & Format Data based on Data TYpe (encoded)
+        if   dataType == 'acceleration':
+            encodedString += 'ACC'
+
+            # Add deliminitor
+            encodedString += '>'
+            
+            # Determine individual data value from string
+            splitData = data.split(',\t')
+            d1 = splitData[0][3:]
+            d2 = splitData[1][3:]
+            d3 = splitData[2][3:]
+
+            encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+
+        elif dataType == 'orientation':
+            encodedString += 'EUL'
+
+            # Add deliminitor
+            encodedString += '>'
+            
+            # Determine individual data value from string
+            splitData = data.split(',\t')
+            d1 = splitData[0][9:]
+            d2 = splitData[1][6:]
+            d3 = splitData[2][7:]
+
+            encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+            
+        elif dataType == 'force':
+            encodedString += 'FRC'
+
+            # Add deliminitor
+            encodedString += '>'
+
+            encodedString += data.split(': ')[1] 
+
+        elif dataType == 'rotation':
+            encodedString += 'GYR'
+
+            # Add deliminitor
+            encodedString += '>'
+            
+            # Determine individual data value from string
+            splitData = data.split(',\t')
+            d1 = splitData[0][3:]
+            d2 = splitData[1][3:]
+            d3 = splitData[2][3:]
+
+            encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+
+        encodedString += '\n'
+
+        return encodedString
 
