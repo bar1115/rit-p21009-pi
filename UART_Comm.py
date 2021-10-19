@@ -1,15 +1,8 @@
-'''
-UART communication on Raspberry Pi using Pyhton
-http://www.electronicwings.com
-'''
 import serial
-from time import sleep
 
-ser = serial.Serial ("/dev/ttyS0", 9600)    #Open port with baud rate
+serialport = serial.Serial("serial0", baudrate=9600, timeout=3.0)
+
 while True:
-    received_data = ser.read()              #read serial port
-    sleep(0.03)
-    data_left = ser.inWaiting()             #check for remaining byte
-    received_data += ser.read(data_left)
-    print (received_data)                   #print received data
-    ser.write(received_data)  
+    serialport.write("rnSay something:")
+    rcv = port.read(10)
+    serialport.write("rnYou sent:" + repr(rcv))
