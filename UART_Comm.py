@@ -1,8 +1,10 @@
-import serial
+import serial, datetime
 
-serialport = serial.Serial("serial0", baudrate=9600, timeout=3.0)
+outfile = open("output/out.txt", 'a')
+serialport = serial.Serial("COM8", baudrate=576000, timeout=0.1)
 
 while True:
-    serialport.write("rnSay something:")
-    rcv = port.read(10)
-    serialport.write("rnYou sent:" + repr(rcv))
+    rcv = serialport.read_until(size=256)
+    if (rcv):
+        d = datetime.datetime.now().strftime("[%m/%d/%Y %H:%M:%S.%f] ")
+        outfile.write(d + rcv.strip().decode() + '\n')
