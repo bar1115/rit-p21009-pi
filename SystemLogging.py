@@ -15,8 +15,28 @@ import os
 
 class SystemLogging(object):
 
-    # Sensor Folders
-    sensors =    [ 'Orientation Board', 'Chest Scale','FSR', 'IMU' ] 
+    # Create Encoding Value <-> File Name mapping for simplicity
+    # Sensor Type Maping
+    sensors = {
+                    'OB':'Orientation Board',
+                    'SCAL':'Chest Scale',
+                    'FSR':'FSR',
+                    'IMU':'IMU'
+                 }
+    # Sensor Location Maping
+    locations = {
+                    'H':'head',
+                    'B':'body',
+                    'CH':'chest',
+                    'LR':'leftRib',
+                    'RR':'rightRib',
+                    'LF':'leftForearm',
+                    'RF':'rightForearm',
+                    'LK':'leftKnee',
+                    'RK':'rightKnee',
+                    'LL':'leftLeg',
+                    'RL':'rightLeg'
+                 }
 
     # Save standard folder name
     baseFolderName= "PSPAS_Trial"
@@ -43,7 +63,48 @@ class SystemLogging(object):
         os.makedirs(self.folderName)
         # Make folder directory structure
         for sensor in SystemLogging.sensors:
-            os.makedirs( os.path.join(self.folderName, sensor) )
+            os.makedirs( os.path.join(self.folderName, SystemLogging.sensors[sensor]) )
+
+    def encodeLogData(logData):
+        data = LogData.getDataRaw(logData)
+        dataEncode = '>'.join(data)
+
+        sensorType = LogData.getSensorType(logData)
+        location = LogData.getLocation(logData)
+        dataType = LogData.getDataType(logData)
+
+        # Determine Sensor Type (verbose) using Type Mapping
+        for st in SystemLogging.sensors:
+          if sensorType == SystemLogging.sensors[st]:
+              sensorType = st
+              break
+
+        # Determine Sensor Location (verbose) using Location Mapping
+        for sl in SystemLogging.locations:
+          if location == SystemLogging.locations[sl]:
+              location = sl
+              break
+
+        return (sensorType + '>' + location + '>' + dataType  + '>' +  dataEncode)
+
+    def populateLog(self, logData):
+        # Write to folderName\sensorType\bodyLocation_dataType
+        sensorType = LogData.getSensorType(logData)
+        location = LogData.getLocation(logData)
+        dataType = LogData.getDataType(logData)
+        data = LogData.getDataLog(logData)
+    
+        # sensor.txt file the input log value
+        with open(os.path.join(self.folderName, sensorType,(location + "_" + dataType + ".txt")), 'a') as file:
+            file.write("LOG\t" + data +"\n")
+
+
+    def populateStatus(self, logData):
+        # Write to folderName\'STATUS.txt'
+        encode = SystemLogging.encodeLogData(logData)
+    
+        with open(os.path.join(self.folderName, "STATUS.txt"), 'a') as file:
+            file.write(encode +"\n")
 
 
     def parseEncoding(encode):
@@ -60,68 +121,66 @@ class SystemLogging(object):
         location = ''
         dataType = ''
         data = ''
+        status = False
     
-        # Determine Sensor Type (verbose)
-        if   encode_sensorType == 'OB':
-            sensorType = SystemLogging.sensors[0]
-        elif encode_sensorType == 'SCAL':
-            sensorType = SystemLogging.sensors[1]
-        elif encode_sensorType == 'FSR':
-            sensorType = SystemLogging.sensors[2]
-        elif encode_sensorType == 'IMU':
-            sensorType = SystemLogging.sensors[3]
+        # Determine Sensor Type (verbose) using Type Mapping
+        for st in SystemLogging.sensors:
+          if encode_sensorType == st:
+              sensorType = SystemLogging.sensors[st]
+              break
+        
+        # Invalid Encodding - Return None and handle outside
+        if sensorType == '':
+            return None
 
-        # Determine Sensor Location (verbose)
-        if   encode_sensorLocale == 'H':
-            location = 'head'
-        elif encode_sensorLocale == 'B':
-            location = 'body'
-        elif encode_sensorLocale == 'CH':
-            location = 'chest'
-        elif encode_sensorLocale == 'LR':
-            location = 'leftRib'
-        elif encode_sensorLocale == 'RR':
-            location = 'rightRib'
-        elif encode_sensorLocale == 'LF':
-            location = 'leftForearm'
-        elif encode_sensorLocale == 'RF':
-            location = 'rightForearm'
-        elif encode_sensorLocale == 'LK':
-            location = 'leftKnee'
-        elif encode_sensorLocale == 'RK':
-            location = 'rightKnee'
-        elif encode_sensorLocale == 'LL':
-            location = 'leftLeg'
-        elif encode_sensorLocale == 'RL':
-            location = 'rightLeg'
+        # Determine Sensor Location (verbose) using Location Mapping
+        for sl in SystemLogging.locations:
+          if encode_sensorLocale == sl:
+              location = SystemLogging.locations[sl]
+              break
 
-        # Determine Data Type & Format Data based on Data TYpe (verbose)
-        if   encode_dataType == 'ACC':
+        # Invalid Encodding - Return None and handle outside
+        if location == '':
+            return None
+
+        # Determine Data Type and Format Data based on Data Type/Statuses; If status type, set status flag (verbose)
+        # DATA TYPE
+        encode_dataSize = len(encode_data)
+
+        if   (encode_dataType == 'ACC') and (encode_dataSize == 3):
             dataType = 'acceleration'
             data = "x: " + encode_data[0] + ",\ty: " +  encode_data[1] + ",\tz: " + encode_data[2]
-        elif encode_dataType == 'EUL':
+        elif (encode_dataType == 'EUL') and (encode_dataSize == 3):
             dataType = 'orientation'
             data = "heading: " + encode_data[0] + ",\troll: " +  encode_data[1] + ",\tpitch: " + encode_data[2]
-        elif encode_dataType == 'FRC':
+        elif (encode_dataType == 'FRC') and (encode_dataSize == 1):
             dataType = 'force'
             data = "force: " + encode_data[0] 
-        elif encode_dataType == 'GYR':
+        elif (encode_dataType == 'GYR') and (encode_dataSize == 3):
             dataType = 'rotation'
             data = "x: " + encode_data[0] + ",\ty: " +  encode_data[1] + ",\tz: " + encode_data[2]
+        # STATUSES
+        elif (encode_dataType == 'LOG') and (encode_dataSize == 1):
+            status = True
+            dataType = 'logging enabled'
+            data = "Enable: " + encode_data[0]
+        elif (encode_dataType == 'EN') and (encode_dataSize == 1):
+            status = True
+            dataType = 'enabled'
+            data = "Enable: " + encode_data[0]
+        elif (encode_dataType == 'CAL') and (encode_dataSize == 4):
+            status = True
+            dataType = 'BNO055 calibration status'
+            data = "GYR: " + encode_data[0] + ",\tACC: " +  encode_data[1] + ",\tMAG: " + encode_data[2] + ",\SYS: " + encode_data[3]
+        elif (encode_dataType == 'OFF') and (encode_dataSize == 3):
+            status = True
+            dataType = 'offset'
+            data = "GYR: " + encode_data[0] + ",\tACC: " +  encode_data[1] + ",\tMAG: " + encode_data[2]
+        else:
+            # Invalid Encodding - Return None and handle outside
+            return None
 
-        return LogData(sensorType, location, dataType, data)
-
-    
-    def populateLog(self, logData):
-        # Write to folderName\sensorType\bodyLocation_dataType
-        sensorType = LogData.getSensorType(logData)
-        location = LogData.getLocation(logData)
-        dataType = LogData.getDataType(logData)
-        data = LogData.getData(logData)
-    
-        # sensor.txt file the input log value
-        with open(os.path.join(self.folderName, sensorType,(location + "_" + dataType + ".txt")), 'a') as file:
-            file.write("LOG\t" + data +"\n")
+        return LogData( sensorType=sensorType, location=location, dataType=dataType, dataLog=data, dataRaw=encode_data, status=status)
 
 
     def generateEncoding( logData ):
@@ -134,48 +193,21 @@ class SystemLogging(object):
         location = LogData.getLocation(logData)
         dataType = LogData.getDataType(logData)
         data = LogData.getData(logData)
-    
-        # Determine Sensor Type (encoded)
-        if   sensorType == SystemLogging.sensors[0]:
-            encodedString += 'OB'
-        elif sensorType == SystemLogging.sensors[1]:
-            encodedString += 'SCAL'
-        elif sensorType == SystemLogging.sensors[2]:
-            encodedString += 'FSR'
-        elif sensorType == SystemLogging.sensors[3]:
-            encodedString += 'IMU'
+
+        # Determine Sensor Type (verbose) using Type Mapping
+        for st in SystemLogging.sensors.values():
+          if sensorType == st:
+              sensorType += st
+
+        # Determine Sensor Location (verbose) using Location Mapping
+        for sl in SystemLogging.locations.values():
+          if sensorType == sl:
+              location += sl
 
         # Add deliminitor
         encodedString += '>'
 
-        # Determine Sensor Location (encoded)
-        if   location == 'head':
-            encodedString += 'H'
-        elif location == 'body':
-            encodedString += 'B'
-        elif location == 'chest':
-            encodedString += 'CH'
-        elif location == 'leftRib':
-            encodedString += 'LR'
-        elif location == 'rightRib':
-            encodedString += 'RR'
-        elif location == 'leftForearm':
-            encodedString += 'LF'
-        elif location == 'rightForearm':
-            encodedString += 'RF'
-        elif location == 'leftKnee':
-            encodedString += 'LK'
-        elif location == 'rightKnee':
-            encodedString += 'RK'
-        elif location == 'leftLeg':
-            encodedString += 'LL'
-        elif location == 'rightLeg':
-            encodedString += 'RL'
-
-        # Add deliminitor
-        encodedString += '>'
-
-        # Determine Data Type & Format Data based on Data TYpe (encoded)
+        # Determine Data Type and Format Data based on Data TYpe (encoded)
         if   dataType == 'acceleration':
             encodedString += 'ACC'
 
@@ -209,7 +241,6 @@ class SystemLogging(object):
 
             # Add deliminitor
             encodedString += '>'
-
             encodedString += data.split(': ')[1] 
 
         elif dataType == 'rotation':
@@ -225,6 +256,57 @@ class SystemLogging(object):
             d3 = splitData[2][3:]
 
             encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+
+        elif dataType == 'logging enabled':
+            encodedString += 'LOG'
+
+            # Add deliminitor
+            encodedString += '>'
+            encodedString += data.split(': ')[1] 
+
+        elif dataType == 'enabled':
+            encodedString += 'EN'
+
+            # Add deliminitor
+            encodedString += '>'
+            encodedString += data.split(': ')[1] 
+
+        elif dataType == 'BNO055 calibration status':
+            encodedString += 'CAL'
+
+            # Add deliminitor
+            encodedString += '>'
+            
+            # Determine individual data value from string
+            splitData = data.split(',\t')
+            d1 = splitData[0][3:]
+            d2 = splitData[1][3:]
+            d3 = splitData[2][3:]
+            d4 = splitData[3][3:]
+
+            encodedString +=  ( d1 + '>' + d2 + '>' + d3 + '>' + d4 )
+        
+        elif dataType == 'offset':
+            encodedString += 'OFF'
+
+            # Add deliminitor
+            encodedString += '>'
+            
+            if sensorType == 'OB':
+                # Determine individual data value from string
+                splitData = data.split(',\t')
+                d1 = splitData[0][3:]
+                d2 = splitData[1][3:]
+                d3 = splitData[2][3:]
+
+                encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+
+            if sensorType == 'SCAL':
+                encodedString += data.split(': ')[1] 
+
+        else:
+            # Invalid Encodding - Return None and handle outside
+            return ''
 
         encodedString += '\n'
 
