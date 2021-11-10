@@ -1,3 +1,16 @@
+#########################################################################################
+#                                                                                       #
+#   File    : LogData.py                                                                #
+#   Author  : Rebecca Reich (bar1115@rit.edu)                                           #
+#   Created : ‎October ‎7, ‎2021                                                           #    
+#                                                                                       #
+#   Description:                                                                        #
+#     A Log Data object which contains the individual parsed data values that           #
+#     were collected from NXP transmission. More specifically, it contains the          #
+#     verbose namings/values to each component of the encoding.                         #   
+#                                                                                       #
+#########################################################################################
+
 class LogData(object):
 
     # Overloaded Constructor

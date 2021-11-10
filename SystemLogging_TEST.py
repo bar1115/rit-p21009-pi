@@ -1,3 +1,16 @@
+#########################################################################################
+#                                                                                       #
+#   File    : SystemLogging_TEST.py                                                     #
+#   Author  : Rebecca Reich (bar1115@rit.edu)                                           #
+#   Created : ‎October ‎7, ‎2021                                                           #
+#                                                                                       #
+#   Description:                                                                        #
+#     A simple tester program which creates the folder structure and populates          #
+#     the appropriate files with their corresponding log data or calibration            #
+#     offsets                                                                           #
+#                                                                                       #
+#########################################################################################
+
 from SystemLogging import SystemLogging
 
 # Initialize a SystemLogging variable
@@ -73,11 +86,7 @@ for i in range(0, 1000):
 # for i in range(0, 1000):
 #     SystemLogging.populateLog( testSysLog, testParseEncode10)
 
-for i in range(0, 100):
-    SystemLogging.populateStatus( testSysLog, testParseEncode11)
 
-for i in range(0, 100):
-    SystemLogging.populateStatus( testSysLog, testParseEncode12)
-
-for i in range(0, 100):
-    SystemLogging.populateStatus( testSysLog, testParseEncode13)
+SystemLogging.populateStatus( testSysLog, testParseEncode11)
+SystemLogging.populateStatus( testSysLog, testParseEncode12)
+SystemLogging.populateStatus( testSysLog, testParseEncode13)

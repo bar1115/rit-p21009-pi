@@ -1,17 +1,26 @@
+#########################################################################################
+#                                                                                       # 
+#   File    : SystemLogging.py                                                          # 
+#   Author  : Rebecca Reich (bar1115@rit.edu)                                           # 
+#   Created : ‎October ‎7, ‎2021                                                           #     
+#                                                                                       # 
+#   Description:                                                                        # 
+#     This class is comprised of methods that handle transmission message               # 
+#     processing and data storage                                                       # 
+#                                                                                       # 
+#        More specifically, SystemLogging includes:                                     # 
+#                                                                                       # 
+#             + NXP → Pi Decoding String                                                # 
+#             + Pi → NXP Encoding String                                                # 
+#             + Creating Folder Structures                                              # 
+#             + Saving Log Data to Log File                                             # 
+#             + Saving Calibration Status Data to Status File                           # 
+#                                                                                       # 
+#########################################################################################
+
 from LogData import LogData
 import os
 
-# Folder Structure will be:
-    #       <sensor type>
-    #           ↳ <body location>_<data type>
-    #           ↳ <body location>_<data type>
-    #           ⋮
-    #           ↳ <body location>_<data type>
-    #       <sensor type>
-    #           ↳ <body location>_<data type>
-    #           ↳ <body location>_<data type>
-    #           ⋮
-    #           ↳ <body location>_<data type>
 
 class SystemLogging(object):
 
@@ -38,6 +47,17 @@ class SystemLogging(object):
                     'RL':'rightLeg'
                  }
 
+    operations = {
+                    'ACC':'acceleration',
+                    'EUL':'orientation',
+                    'FRC':'force',
+                    'GYR':'rotation',
+                    'LOG':'logging enabled',
+                    'EN':'enabled',
+                    'CAL':'BNO055 calibration status',
+                    'OFF':'offset'
+                 }
+
     # Save standard folder name
     baseFolderName= "PSPAS_Trial"
 
@@ -46,6 +66,22 @@ class SystemLogging(object):
         # Leaving Stubbed out untill we determine whether or not we require init method
 
     def createFolderStructure(self): 
+        """
+        Generate Folder Structure & Empty Log Files on the Pi. The folder structure is as follows:
+
+            Folder Structure will be:
+                    <sensor type>
+                        ↳ <body location>_<data type>
+                        ↳ <body location>_<data type>
+                        ⋮
+                        ↳ <body location>_<data type>
+                    <sensor type>
+                        ↳ <body location>_<data type>
+                        ↳ <body location>_<data type>
+                        ⋮
+                        ↳ <body location>_<data type>
+
+        """
 
         # Initialize values for base folder
         i = 0
@@ -66,6 +102,16 @@ class SystemLogging(object):
             os.makedirs( os.path.join(self.folderName, SystemLogging.sensors[sensor]) )
 
     def encodeLogData(logData):
+        """
+        Revert LogData object to Encoded String
+
+        Args:
+            logData (LogData): A LogData object containing the decoded data
+
+        Returns:
+            [String]: A reverted, encoding string formatted to the input encoding
+
+        """
         data = LogData.getDataRaw(logData)
         dataEncode = '>'.join(data)
 
@@ -73,21 +119,33 @@ class SystemLogging(object):
         location = LogData.getLocation(logData)
         dataType = LogData.getDataType(logData)
 
-        # Determine Sensor Type (verbose) using Type Mapping
+        # Determine Sensor Type (short) using Type Mapping
         for st in SystemLogging.sensors:
           if sensorType == SystemLogging.sensors[st]:
               sensorType = st
               break
 
-        # Determine Sensor Location (verbose) using Location Mapping
+        # Determine Sensor Location (short) using Location Mapping
         for sl in SystemLogging.locations:
           if location == SystemLogging.locations[sl]:
               location = sl
               break
 
+        # Determine Sensor Operation (short) using Location Mapping
+        for so in SystemLogging.operations:
+          if dataType == SystemLogging.operations[so]:
+              dataType = so
+              break
+
         return (sensorType + '>' + location + '>' + dataType  + '>' +  dataEncode)
 
     def populateLog(self, logData):
+        """
+        From an LogData object, write the log data to its corresponding file
+
+        Args:
+            logData (LogData): A LogData object containing the decoded data
+        """
         # Write to folderName\sensorType\bodyLocation_dataType
         sensorType = LogData.getSensorType(logData)
         location = LogData.getLocation(logData)
@@ -100,14 +158,27 @@ class SystemLogging(object):
 
 
     def populateStatus(self, logData):
-        # Write to folderName\'STATUS.txt'
+        """[summary]
+
+        Args:
+            logData (LogData): A LogData object containing the decoded data
+        """
+        # Write to folderName\'CALIBRATION_PRESETS.txt'
         encode = SystemLogging.encodeLogData(logData)
     
-        with open(os.path.join(self.folderName, "STATUS.txt"), 'a') as file:
+        with open("CALIBRATION_PRESETS.txt", 'a') as file:
             file.write(encode +"\n")
 
 
     def parseEncoding(encode):
+        """[summary]
+
+        Args:
+            encode ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
         splitData = encode.split('>')
 
         # Section encoded input into data types
@@ -184,6 +255,14 @@ class SystemLogging(object):
 
 
     def generateEncoding( logData ):
+        """[summary]
+
+        Args:
+            logData (LogData): A LogData object containing the decoded data
+
+        Returns:
+            [type]: [description]
+        """
 
         encodedString = ''
         encodeData = ''
