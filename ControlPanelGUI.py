@@ -13,9 +13,14 @@
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import *
+import threading
 from PIL import Image, ImageTk
 
-class ControlPanelGUI:
+from SystemLogging import SystemLogging
+from UART_Comm import UART_Comms
+
+
+class ControlPanelGUI(threading.Thread):
 
     width=480
     height=320
@@ -29,13 +34,19 @@ class ControlPanelGUI:
             root (Tk): The tkinter object necessary to estable layout
         """
 
+        # Setup root
         self.root = root
-
-        # Setting - Title
         self.root.title("Pediactric Test Mannequin")
 
-        # Setting - Window Size
+        # Initialize GUI thread
+        threading.Thread.__init__(self)
+
+        # Initialize COMS thread
+        # self.main_thread = UART_Comms()
+        self.uartComms = UART_Comms()
         
+
+        # Setting - Window Size
         ControlPanelGUI.highlightColor = "#85d3e9"
         screenwidth = self.root.winfo_screenwidth()
         screenheight = self.root.winfo_screenheight()
@@ -44,34 +55,39 @@ class ControlPanelGUI:
         self.root.resizable(width=False, height=False)
         ft = tkFont.Font(family='Times',size=10)
 
-
         # Create a grid gridDim x gridDim
         for rows in range(0, ControlPanelGUI.gridDim - 1):
             self.root.rowconfigure(rows, weight=1)
             self.root.columnconfigure(rows,weight=1)
-
+            
+        self.start()
+    
+    def run(self):
+        self.bootScreen()
 
     def clearGrid(self):
         # Clear all elements in the window
         for widget in self.root.winfo_children():
-            print(widget)
             widget.destroy()
 
 
-    def createCalButton(root, r, c):
+    def createCalButton(self, root, r, c, sensor, type):
         calButton=tk.Button(root, width=20)
         calButton["bg"] = ControlPanelGUI.highlightColor
         calButton["font"] = tkFont.Font(family='Helvetica', size=12)
         calButton["text"] = "CAL"
         calButton.grid(row = r, column = c, sticky='n', padx=10, ipady=7)
+        calButton["command"] = lambda: self.calSensor(sensor, type)
 
 
-    def createScalButton(root, r, c):
+    def createZeroButton(self, root, r, c, sensor, type):
         scalLabel=tk.Button(root, width=20)
         scalLabel["bg"] = ControlPanelGUI.highlightColor
         scalLabel["font"] = tkFont.Font(family='Helvetica', size=12)
         scalLabel["text"] = "ZERO"
         scalLabel.grid(row = r, column = c, sticky='n', padx=10, ipady=10)
+        scalLabel["command"] = lambda: self.zeroSensor(sensor, type)
+
 
     def bootScreen( self ):
 
@@ -91,14 +107,14 @@ class ControlPanelGUI:
         nameLabel["text"] = "PSPAS Home"
         nameLabel.grid(row = 0, padx=10, pady=30, sticky='w', column = 3, columnspan = 2)
 
-        calButton=tk.Button(self.root, height=5, width=15)
-        calButton["bg"] = ControlPanelGUI.highlightColor
-        calButton["font"] = tkFont.Font(family='Helvetica', size=12)
-        calButton["fg"] = "#000000"
-        calButton["justify"] = "center"
-        calButton["text"] = "Calibrate\nMenue"
-        calButton.grid(row = 2, sticky='n', padx=10, column = 0, columnspan=2, rowspan=2)
-        calButton["command"] = self.loadCalibrateMenue
+        calMenueButton=tk.Button(self.root, height=5, width=15)
+        calMenueButton["bg"] = ControlPanelGUI.highlightColor
+        calMenueButton["font"] = tkFont.Font(family='Helvetica', size=12)
+        calMenueButton["fg"] = "#000000"
+        calMenueButton["justify"] = "center"
+        calMenueButton["text"] = "Calibrate\nMenue"
+        calMenueButton.grid(row = 2, sticky='n', padx=10, column = 0, columnspan=2, rowspan=2)
+        calMenueButton["command"] = self.loadCalibrateMenue
 
         collectButton=tk.Button(self.root, height=5, width=15)
         collectButton["bg"] = ControlPanelGUI.highlightColor
@@ -152,15 +168,15 @@ class ControlPanelGUI:
         obLabel["fg"] = "#000000"
         obLabel["text"] = "Orientation Board"
         obLabel.grid(row = 2, column = 1, sticky='s')
-        ControlPanelGUI.createCalButton(self.root, 3, 1)
-        ControlPanelGUI.createScalButton(self.root, 4, 1)
+        ControlPanelGUI.createCalButton(self, self.root, 3, 1, 'OB', 'CAL')
+        ControlPanelGUI.createZeroButton(self, self.root, 4, 1, 'OB', 'ZERO')
 
         scalLabel=tk.Label(self.root)
         scalLabel["font"] = tkFont.Font(family='Helvetica', size=10)
         scalLabel["text"] = "Scale"
         scalLabel.grid(row = 2, column = 2, sticky='s')
-        ControlPanelGUI.createCalButton(self.root, 3, 2)
-        ControlPanelGUI.createScalButton(self.root, 4, 2)
+        ControlPanelGUI.createCalButton(self, self.root, 3, 2, 'SCAL', 'CAL')
+        ControlPanelGUI.createZeroButton(self, self.root, 4, 2, 'SCAL', 'ZERO')
 
         fsrLabel=tk.Label(self.root)
         fsrLabel["font"] = tkFont.Font(family='Helvetica', size=10)
@@ -168,8 +184,8 @@ class ControlPanelGUI:
         fsrLabel["fg"] = "#000000"
         fsrLabel["text"] = "Force Sensors"
         fsrLabel.grid(row = 2, column = 3, sticky='s')
-        ControlPanelGUI.createCalButton(self.root, 3, 3)
-        ControlPanelGUI.createScalButton(self.root, 4, 3)
+        ControlPanelGUI.createCalButton(self, self.root, 3, 3, 'FSR', 'CAL')
+        ControlPanelGUI.createZeroButton(self, self.root, 4, 3, 'FSR', 'ZERO')
 
 
     def collectScreen(self):
@@ -211,36 +227,31 @@ class ControlPanelGUI:
         start = Image.open("icons\play.png")
         start = start.resize((75, 75), Image.ANTIALIAS)
         start = ImageTk.PhotoImage(start)       
-        startButton=tk.Button(self.root, bd=0, image=start)
+        startButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=start)
         startButton.image = start
-        startButton.grid(row = 3, column = 0, columnspan=2,  rowspan=2, sticky='ew')
+        startButton.grid(row = 3, column = 0, ipady=25, columnspan=2,  rowspan=2, sticky='ew')
         startButton["command"] = self.startEvent
 
         # STOP TESTING BUTTON
         stop = Image.open("icons\pause.png")
         stop = stop.resize((75, 75), Image.ANTIALIAS)
         stop = ImageTk.PhotoImage(stop)       
-        stopButton=tk.Button(self.root, bd=0, image=stop)
+        stopButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=stop)
         stopButton.image = stop
-        stopButton.grid(row = 3, column = 3, columnspan=2,  rowspan=2, sticky='ew')
+        stopButton.grid(row = 3, column = 2, ipady=25, columnspan=3,  rowspan=2, sticky='ew')
         stopButton["command"] = self.stopEvent
 
-
-        # # TASK BAR BAND
-        # bottomBar=tk.Label(root)
-        # bottomBar["bg"] = ControlPanelGUI.highlightColor
-        # bottomBar.pack( ipady=12, side='bottom', fill='x' )
 
     def loadCalibrateMenue(self):
         print("GO TO CALIBRATE MENUE")
         self.clearGrid()
         self.calibrateScreen()
 
-
     def loadCollectMenu(self):
         print("GO TO DATA COLLECTION MENUE")
         self.clearGrid()
         self.collectScreen()
+
 
     def loadHomeMenu(self):
         print("GO TO HOME MENUE")
@@ -253,13 +264,28 @@ class ControlPanelGUI:
 
     def startEvent(self):
         print("start collecting data")
+        #self.main_thread.start()
+        self.uart_thread = threading.Thread(target=self.uartComms.poll_data)
+        self.uart_thread.start()
+        self.uart_thread.join()
+
 
     def stopEvent(self):
         print("stop collecting data")
+        self.uartComms.raise_exception()
 
+
+    def calSensor(self, sensor, type):
+        print("calibrate sensor: " + sensor + ", " + type)
+
+        
+
+    def zeroSensor(self, sensor, type):
+        print("zero sensor: " + sensor + ", " + type)
+        
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = ControlPanelGUI(root)
-    app.bootScreen()
+    main_thread = UART_Comms()
+    gui_thread = ControlPanelGUI(root)
     root.mainloop()

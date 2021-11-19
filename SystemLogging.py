@@ -21,42 +21,45 @@
 from LogData import LogData
 import os
 
+# Create Encoding Value <-> File Name mapping for simplicity
+# Sensor Type Maping
+global SENSORS
+SENSORS = {
+            'OB':'Orientation Board',
+            'SCAL':'Chest Scale',
+            'FSR':'FSR',
+            'IMU':'IMU'
+            }
+# Sensor Location Maping
+global LOCATIONS
+LOCATIONS = {
+            'H':'head',
+            'B':'body',
+            'CH':'chest',
+            'LR':'leftRib',
+            'RR':'rightRib',
+            'LF':'leftForearm',
+            'RF':'rightForearm',
+            'LK':'leftKnee',
+            'RK':'rightKnee',
+            'LL':'leftLeg',
+            'RL':'rightLeg'
+            }
+
+global OPERATIONS
+OPERATIONS = {
+            'ACC':'acceleration',
+            'EUL':'orientation',
+            'FRC':'force',
+            'GYR':'rotation',
+            'LOG':'logging enabled',
+            'EN':'enabled',
+            'CAL':'BNO055 calibration status',
+            'OFF':'offset'
+            }
+
 
 class SystemLogging(object):
-
-    # Create Encoding Value <-> File Name mapping for simplicity
-    # Sensor Type Maping
-    sensors = {
-                    'OB':'Orientation Board',
-                    'SCAL':'Chest Scale',
-                    'FSR':'FSR',
-                    'IMU':'IMU'
-                 }
-    # Sensor Location Maping
-    locations = {
-                    'H':'head',
-                    'B':'body',
-                    'CH':'chest',
-                    'LR':'leftRib',
-                    'RR':'rightRib',
-                    'LF':'leftForearm',
-                    'RF':'rightForearm',
-                    'LK':'leftKnee',
-                    'RK':'rightKnee',
-                    'LL':'leftLeg',
-                    'RL':'rightLeg'
-                 }
-
-    operations = {
-                    'ACC':'acceleration',
-                    'EUL':'orientation',
-                    'FRC':'force',
-                    'GYR':'rotation',
-                    'LOG':'logging enabled',
-                    'EN':'enabled',
-                    'CAL':'BNO055 calibration status',
-                    'OFF':'offset'
-                 }
 
     # Save standard folder name
     baseFolderName= "PSPAS_Trial"
@@ -98,8 +101,8 @@ class SystemLogging(object):
         # Make new folder for this test
         os.makedirs(self.folderName)
         # Make folder directory structure
-        for sensor in SystemLogging.sensors:
-            os.makedirs( os.path.join(self.folderName, SystemLogging.sensors[sensor]) )
+        for sensor in SystemLogging.SENSORS:
+            os.makedirs( os.path.join(self.folderName, SystemLogging.SENSORS[sensor]) )
 
     def encodeLogData(logData):
         """
@@ -120,20 +123,20 @@ class SystemLogging(object):
         dataType = LogData.getDataType(logData)
 
         # Determine Sensor Type (short) using Type Mapping
-        for st in SystemLogging.sensors:
-          if sensorType == SystemLogging.sensors[st]:
+        for st in SystemLogging.SENSORS:
+          if sensorType == SystemLogging.SENSORS[st]:
               sensorType = st
               break
 
         # Determine Sensor Location (short) using Location Mapping
-        for sl in SystemLogging.locations:
-          if location == SystemLogging.locations[sl]:
+        for sl in SystemLogging.LOCATIONS:
+          if location == SystemLogging.LOCATIONS[sl]:
               location = sl
               break
 
         # Determine Sensor Operation (short) using Location Mapping
-        for so in SystemLogging.operations:
-          if dataType == SystemLogging.operations[so]:
+        for so in SystemLogging.OPERATIONS:
+          if dataType == SystemLogging.OPERATIONS[so]:
               dataType = so
               break
 
@@ -195,9 +198,9 @@ class SystemLogging(object):
         status = False
     
         # Determine Sensor Type (verbose) using Type Mapping
-        for st in SystemLogging.sensors:
+        for st in SystemLogging.SENSORS:
           if encode_sensorType == st:
-              sensorType = SystemLogging.sensors[st]
+              sensorType = SystemLogging.SENSORS[st]
               break
         
         # Invalid Encodding - Return None and handle outside
@@ -205,9 +208,9 @@ class SystemLogging(object):
             return None
 
         # Determine Sensor Location (verbose) using Location Mapping
-        for sl in SystemLogging.locations:
+        for sl in SystemLogging.LOCATIONS:
           if encode_sensorLocale == sl:
-              location = SystemLogging.locations[sl]
+              location = SystemLogging.LOCATIONS[sl]
               break
 
         # Invalid Encodding - Return None and handle outside
@@ -274,12 +277,12 @@ class SystemLogging(object):
         data = LogData.getData(logData)
 
         # Determine Sensor Type (verbose) using Type Mapping
-        for st in SystemLogging.sensors.values():
+        for st in SystemLogging.SENSORS.values():
           if sensorType == st:
               sensorType += st
 
         # Determine Sensor Location (verbose) using Location Mapping
-        for sl in SystemLogging.locations.values():
+        for sl in SystemLogging.LOCATIONS.values():
           if sensorType == sl:
               location += sl
 
