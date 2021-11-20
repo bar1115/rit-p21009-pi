@@ -58,9 +58,7 @@ OPERATIONS = {
             'OFF':'offset'
             }
 
-
 class SystemLogging(object):
-
     # Save standard folder name
     baseFolderName= "PSPAS_Trial"
 
@@ -101,8 +99,8 @@ class SystemLogging(object):
         # Make new folder for this test
         os.makedirs(self.folderName)
         # Make folder directory structure
-        for sensor in SystemLogging.SENSORS:
-            os.makedirs( os.path.join(self.folderName, SystemLogging.SENSORS[sensor]) )
+        for sensor in SENSORS:
+            os.makedirs( os.path.join(self.folderName, SENSORS[sensor]) )
 
     def encodeLogData(logData):
         """
@@ -123,20 +121,20 @@ class SystemLogging(object):
         dataType = LogData.getDataType(logData)
 
         # Determine Sensor Type (short) using Type Mapping
-        for st in SystemLogging.SENSORS:
-          if sensorType == SystemLogging.SENSORS[st]:
+        for st in SENSORS:
+          if sensorType == SENSORS[st]:
               sensorType = st
               break
 
         # Determine Sensor Location (short) using Location Mapping
-        for sl in SystemLogging.LOCATIONS:
-          if location == SystemLogging.LOCATIONS[sl]:
+        for sl in LOCATIONS:
+          if location == LOCATIONS[sl]:
               location = sl
               break
 
         # Determine Sensor Operation (short) using Location Mapping
-        for so in SystemLogging.OPERATIONS:
-          if dataType == SystemLogging.OPERATIONS[so]:
+        for so in OPERATIONS:
+          if dataType == OPERATIONS[so]:
               dataType = so
               break
 
@@ -198,9 +196,9 @@ class SystemLogging(object):
         status = False
     
         # Determine Sensor Type (verbose) using Type Mapping
-        for st in SystemLogging.SENSORS:
+        for st in SENSORS:
           if encode_sensorType == st:
-              sensorType = SystemLogging.SENSORS[st]
+              sensorType = SENSORS[st]
               break
         
         # Invalid Encodding - Return None and handle outside
@@ -208,9 +206,9 @@ class SystemLogging(object):
             return None
 
         # Determine Sensor Location (verbose) using Location Mapping
-        for sl in SystemLogging.LOCATIONS:
+        for sl in LOCATIONS:
           if encode_sensorLocale == sl:
-              location = SystemLogging.LOCATIONS[sl]
+              location = LOCATIONS[sl]
               break
 
         # Invalid Encodding - Return None and handle outside
@@ -277,12 +275,12 @@ class SystemLogging(object):
         data = LogData.getData(logData)
 
         # Determine Sensor Type (verbose) using Type Mapping
-        for st in SystemLogging.SENSORS.values():
+        for st in SENSORS.values():
           if sensorType == st:
               sensorType += st
 
         # Determine Sensor Location (verbose) using Location Mapping
-        for sl in SystemLogging.LOCATIONS.values():
+        for sl in LOCATIONS.values():
           if sensorType == sl:
               location += sl
 

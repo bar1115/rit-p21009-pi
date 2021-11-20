@@ -2,7 +2,7 @@
 #                                                                                       #
 #   File    : ControlPanelGUI.py                                                        #
 #   Author  : Thomas Sosa (ts5630@rit.edu) & Rebecca Reich (bar1115@rit.edu)            #
-#   Created : ‎October ‎7, ‎2021                                                           #    
+#   Created : ‎October ‎7, ‎2021                                   #    
 #                                                                                       #
 #   Description:                                                                        #
 #     The Control Panel GUI, which creates the labels, buttons and button events        #   
@@ -16,15 +16,14 @@ from tkinter import *
 import threading
 from PIL import Image, ImageTk
 
-from SystemLogging import SystemLogging
-from UART_Comm import UART_Comms
+from MCU_Comms import MCU_Comms
 
 
 class ControlPanelGUI(threading.Thread):
 
-    width=480
-    height=320
-    gridDim = 6
+    WIDTH       = 480
+    HEIGHT      = 320
+    GRID_DIM    = 6
     
     def __init__(self, root):
         """
@@ -41,29 +40,31 @@ class ControlPanelGUI(threading.Thread):
         # Initialize GUI thread
         threading.Thread.__init__(self)
 
-        # Initialize COMS thread
-        # self.main_thread = UART_Comms()
-        self.uartComms = UART_Comms()
-        
-
         # Setting - Window Size
         ControlPanelGUI.highlightColor = "#85d3e9"
         screenwidth = self.root.winfo_screenwidth()
         screenheight = self.root.winfo_screenheight()
-        alignstr = '%dx%d+%d+%d' % (ControlPanelGUI.width, ControlPanelGUI.height, (screenwidth - ControlPanelGUI.width) / 2, (screenheight - ControlPanelGUI.height) / 2)
+        alignstr = '%dx%d+%d+%d' % (self.WIDTH, self.HEIGHT, (screenwidth - self.WIDTH) / 2, (screenheight - self.HEIGHT) / 2)
         self.root.geometry(alignstr)
         self.root.resizable(width=False, height=False)
         ft = tkFont.Font(family='Times',size=10)
 
-        # Create a grid gridDim x gridDim
-        for rows in range(0, ControlPanelGUI.gridDim - 1):
+        # Create a grid GRID_DIM x GRID_DIM
+        for rows in range(0, ControlPanelGUI.GRID_DIM - 1):
             self.root.rowconfigure(rows, weight=1)
             self.root.columnconfigure(rows,weight=1)
+
+        # Initialize communications to the MCU
+        self.mcuComms = MCU_Comms()
+        self.poll_data_en = False
+        self.poll_status_en = False
             
         self.start()
     
+
     def run(self):
         self.bootScreen()
+
 
     def clearGrid(self):
         # Clear all elements in the window
@@ -91,7 +92,7 @@ class ControlPanelGUI(threading.Thread):
 
     def bootScreen( self ):
 
-        self.root.title("BOOT MENUE")
+        self.root.title("BOOT MENU")
 
         logo = Image.open("icons/logo.png")
         logo = logo.resize((140, 50), Image.ANTIALIAS)
@@ -107,21 +108,21 @@ class ControlPanelGUI(threading.Thread):
         nameLabel["text"] = "PSPAS Home"
         nameLabel.grid(row = 0, padx=10, pady=30, sticky='w', column = 3, columnspan = 2)
 
-        calMenueButton=tk.Button(self.root, height=5, width=15)
-        calMenueButton["bg"] = ControlPanelGUI.highlightColor
-        calMenueButton["font"] = tkFont.Font(family='Helvetica', size=12)
-        calMenueButton["fg"] = "#000000"
-        calMenueButton["justify"] = "center"
-        calMenueButton["text"] = "Calibrate\nMenue"
-        calMenueButton.grid(row = 2, sticky='n', padx=10, column = 0, columnspan=2, rowspan=2)
-        calMenueButton["command"] = self.loadCalibrateMenue
+        calMenuButton=tk.Button(self.root, height=5, width=15)
+        calMenuButton["bg"] = ControlPanelGUI.highlightColor
+        calMenuButton["font"] = tkFont.Font(family='Helvetica', size=12)
+        calMenuButton["fg"] = "#000000"
+        calMenuButton["justify"] = "center"
+        calMenuButton["text"] = "Calibrate\nMenu"
+        calMenuButton.grid(row = 2, sticky='n', padx=10, column = 0, columnspan=2, rowspan=2)
+        calMenuButton["command"] = self.loadCalibrateMenu
 
         collectButton=tk.Button(self.root, height=5, width=15)
         collectButton["bg"] = ControlPanelGUI.highlightColor
         collectButton["font"] = tkFont.Font(family='Helvetica', size=12)
         collectButton["fg"] = "#000000"
         collectButton["justify"] = "center"
-        collectButton["text"] = "Collect\nMenue"
+        collectButton["text"] = "Collect\nMenu"
         collectButton.grid(row = 2, sticky='nw', column = 2, columnspan=2, rowspan=2)
         collectButton["command"] = self.loadCollectMenu
 
@@ -137,7 +138,7 @@ class ControlPanelGUI(threading.Thread):
 
     def calibrateScreen(self):
 
-        self.root.title("CALIBRATE MENUE")
+        self.root.title("CALIBRATE MENU")
 
         # Place LOGO
         logo = Image.open("icons/logo.png")
@@ -160,7 +161,7 @@ class ControlPanelGUI(threading.Thread):
         nameLabel["font"] = tkFont.Font(family='Helvetica', weight="bold", size=14)
         nameLabel["fg"] = "#000000"
         nameLabel["justify"] = "center"
-        nameLabel["text"] = "Calibration Menue"
+        nameLabel["text"] = "Calibration Menu"
         nameLabel.grid(row = 1, column = 0, padx=10, columnspan = 7, sticky='ew')
 
         obLabel=tk.Label(self.root)
@@ -190,7 +191,7 @@ class ControlPanelGUI(threading.Thread):
 
     def collectScreen(self):
 
-        self.root.title("COLLECT DATA MENUE")
+        self.root.title("COLLECT DATA MENU")
 
         # Place LOGO
         logo = Image.open("icons/logo.png")
@@ -213,7 +214,7 @@ class ControlPanelGUI(threading.Thread):
         nameLabel["font"] = tkFont.Font(family='Helvetica', weight="bold", size=14)
         nameLabel["fg"] = "#000000"
         nameLabel["justify"] = "center"
-        nameLabel["text"] = "Test Menue"
+        nameLabel["text"] = "Test Menu"
         nameLabel.grid(row = 1, column = 0, columnspan = 6, sticky='ew')
 
         nameLabel=tk.Label(self.root)
@@ -242,43 +243,49 @@ class ControlPanelGUI(threading.Thread):
         stopButton["command"] = self.stopEvent
 
 
-    def loadCalibrateMenue(self):
-        print("GO TO CALIBRATE MENUE")
+    def loadCalibrateMenu(self):
+        print("GO TO CALIBRATE MENU")
         self.clearGrid()
         self.calibrateScreen()
 
+
     def loadCollectMenu(self):
-        print("GO TO DATA COLLECTION MENUE")
+        print("GO TO DATA COLLECTION MENU")
         self.clearGrid()
         self.collectScreen()
 
 
     def loadHomeMenu(self):
-        print("GO TO HOME MENUE")
+        print("GO TO HOME MENU")
+        self.poll_data_en = False
+        self.poll_status_en = False
         self.clearGrid()
         self.bootScreen()
+
 
     def saveToUSB(self):
         print("Save Data to USB")
 
 
     def startEvent(self):
-        print("start collecting data")
-        #self.main_thread.start()
-        self.uart_thread = threading.Thread(target=self.uartComms.poll_data)
-        self.uart_thread.start()
-        self.uart_thread.join()
+        if not self.poll_status_en:
+            print("Start collecting data")
+            self.poll_status_en = True
+            self.status_thread = threading.Thread(target=self.mcuComms.poll_data, args=(lambda : self.poll_status_en, ))
+            self.status_thread.start()
+        else:
+            print("Already collecting data!")
 
 
     def stopEvent(self):
-        print("stop collecting data")
-        self.uartComms.raise_exception()
+        print("Stop collecting data")
+        self.poll_status_en = False
+        self.status_thread.join()
 
 
     def calSensor(self, sensor, type):
         print("calibrate sensor: " + sensor + ", " + type)
 
-        
 
     def zeroSensor(self, sensor, type):
         print("zero sensor: " + sensor + ", " + type)
@@ -286,6 +293,5 @@ class ControlPanelGUI(threading.Thread):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    main_thread = UART_Comms()
     gui_thread = ControlPanelGUI(root)
     root.mainloop()
