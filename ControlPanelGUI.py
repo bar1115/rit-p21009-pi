@@ -10,10 +10,10 @@
 #                                                                                       #
 #########################################################################################
 
+import threading, os
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import *
-import threading
 from PIL import Image, ImageTk
 
 from MCU_Comms import MCU_Comms
@@ -265,7 +265,9 @@ class ControlPanelGUI(threading.Thread):
 
     def saveToUSB(self):
         print("Save Data to USB")
-
+        self.save_thread = threading.Thread(target=self.mcuComms.saveUSB)
+        self.save_thread.join()
+        
 
     def startEvent(self):
         if not self.poll_status_en:

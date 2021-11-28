@@ -57,6 +57,13 @@ OPERATIONS = {
             'CAL':'BNO055 calibration status',
             'OFF':'offset'
             }
+            
+global COMMANDS
+COMMANDS = {
+            'OB' :   ['H', 'B'],
+            'SCAL' : ['LL', 'RR'],
+            'FSR' :  ['LR', 'RR', 'LH', 'RH', 'LF', 'RF', 'LK', 'RK']
+           }
 
 class SystemLogging(object):
     # Save standard folder name
@@ -101,6 +108,9 @@ class SystemLogging(object):
         # Make folder directory structure
         for sensor in SENSORS:
             os.makedirs( os.path.join(self.folderName, SENSORS[sensor]) )
+
+    def getFoldername(self):
+        return self.baseFolderName
 
     def encodeLogData(logData):
         """
