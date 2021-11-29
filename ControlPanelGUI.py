@@ -42,6 +42,7 @@ class ControlPanelGUI(threading.Thread):
 
         # Setting - Window Size
         ControlPanelGUI.highlightColor = "#85d3e9"
+        ControlPanelGUI.grayColor = "#ccc"
         screenwidth = self.root.winfo_screenwidth()
         screenheight = self.root.winfo_screenheight()
         alignstr = '%dx%d+%d+%d' % (self.WIDTH, self.HEIGHT, (screenwidth - self.WIDTH) / 2, (screenheight - self.HEIGHT) / 2)
@@ -56,8 +57,13 @@ class ControlPanelGUI(threading.Thread):
 
         # Initialize communications to the MCU
         self.mcuComms = MCU_Comms()
-        self.poll_data_en = False
-        self.poll_status_en = False
+        self.collect_en = False
+
+        # Initialize device enables.
+        self.obEnFlag = True
+        self.scaleEnFlag = True
+        self.fsrEnFlag = True
+        self.imuEnFlag = True
             
         self.start()
     
@@ -72,22 +78,22 @@ class ControlPanelGUI(threading.Thread):
             widget.destroy()
 
 
-    def createCalButton(self, root, r, c, sensor, type):
-        calButton=tk.Button(root, width=20)
-        calButton["bg"] = ControlPanelGUI.highlightColor
-        calButton["font"] = tkFont.Font(family='Helvetica', size=12)
-        calButton["text"] = "CAL"
-        calButton.grid(row = r, column = c, sticky='n', padx=10, ipady=7)
-        calButton["command"] = lambda: self.calSensor(sensor, type)
+    def createEnButton(self, root, r, c, sensor, type):
+        enButton=tk.Button(root, width=20)
+        enButton["bg"] = ControlPanelGUI.highlightColor
+        enButton["font"] = tkFont.Font(family='Helvetica', size=12)
+        enButton["text"] = "DISABLE"
+        enButton.grid(row = r, column = c, sticky='n', padx=10, ipady=7)
+        enButton["command"] = lambda: self.enSensor(sensor, type, enButton)
 
 
     def createZeroButton(self, root, r, c, sensor, type):
-        scalLabel=tk.Button(root, width=20)
-        scalLabel["bg"] = ControlPanelGUI.highlightColor
-        scalLabel["font"] = tkFont.Font(family='Helvetica', size=12)
-        scalLabel["text"] = "ZERO"
-        scalLabel.grid(row = r, column = c, sticky='n', padx=10, ipady=10)
-        scalLabel["command"] = lambda: self.zeroSensor(sensor, type)
+        zeroButton=tk.Button(root, width=20)
+        zeroButton["bg"] = ControlPanelGUI.highlightColor
+        zeroButton["font"] = tkFont.Font(family='Helvetica', size=12)
+        zeroButton["text"] = "ZERO"
+        zeroButton.grid(row = r, column = c, sticky='n', padx=10, ipady=10)
+        zeroButton["command"] = lambda: self.zeroSensor(sensor, type)
 
 
     def bootScreen( self ):
@@ -108,14 +114,14 @@ class ControlPanelGUI(threading.Thread):
         nameLabel["text"] = "PSPAS Home"
         nameLabel.grid(row = 0, padx=10, pady=30, sticky='w', column = 3, columnspan = 2)
 
-        calMenuButton=tk.Button(self.root, height=5, width=15)
-        calMenuButton["bg"] = ControlPanelGUI.highlightColor
-        calMenuButton["font"] = tkFont.Font(family='Helvetica', size=12)
-        calMenuButton["fg"] = "#000000"
-        calMenuButton["justify"] = "center"
-        calMenuButton["text"] = "Calibrate\nMenu"
-        calMenuButton.grid(row = 2, sticky='n', padx=10, column = 0, columnspan=2, rowspan=2)
-        calMenuButton["command"] = self.loadCalibrateMenu
+        confMenuButton=tk.Button(self.root, height=5, width=15)
+        confMenuButton["bg"] = ControlPanelGUI.highlightColor
+        confMenuButton["font"] = tkFont.Font(family='Helvetica', size=12)
+        confMenuButton["fg"] = "#000000"
+        confMenuButton["justify"] = "center"
+        confMenuButton["text"] = "Configure\nMenu"
+        confMenuButton.grid(row = 2, sticky='n', padx=10, column = 0, columnspan=2, rowspan=2)
+        confMenuButton["command"] = self.loadConfigureMenu
 
         collectButton=tk.Button(self.root, height=5, width=15)
         collectButton["bg"] = ControlPanelGUI.highlightColor
@@ -136,9 +142,9 @@ class ControlPanelGUI(threading.Thread):
         exportButton["command"] = self.saveToUSB
 
 
-    def calibrateScreen(self):
+    def configureScreen(self):
 
-        self.root.title("CALIBRATE MENU")
+        self.root.title("CONFIGURE MENU")
 
         # Place LOGO
         logo = Image.open("icons/logo.png")
@@ -161,7 +167,7 @@ class ControlPanelGUI(threading.Thread):
         nameLabel["font"] = tkFont.Font(family='Helvetica', weight="bold", size=14)
         nameLabel["fg"] = "#000000"
         nameLabel["justify"] = "center"
-        nameLabel["text"] = "Calibration Menu"
+        nameLabel["text"] = "Configuration Menu"
         nameLabel.grid(row = 1, column = 0, padx=10, columnspan = 7, sticky='ew')
 
         obLabel=tk.Label(self.root)
@@ -169,14 +175,14 @@ class ControlPanelGUI(threading.Thread):
         obLabel["fg"] = "#000000"
         obLabel["text"] = "Orientation Board"
         obLabel.grid(row = 2, column = 1, sticky='s')
-        ControlPanelGUI.createCalButton(self, self.root, 3, 1, 'OB', 'CAL')
+        ControlPanelGUI.createEnButton(self, self.root, 3, 1, 'OB', 'EN')
         ControlPanelGUI.createZeroButton(self, self.root, 4, 1, 'OB', 'ZERO')
 
         scalLabel=tk.Label(self.root)
         scalLabel["font"] = tkFont.Font(family='Helvetica', size=10)
         scalLabel["text"] = "Scale"
         scalLabel.grid(row = 2, column = 2, sticky='s')
-        ControlPanelGUI.createCalButton(self, self.root, 3, 2, 'SCAL', 'CAL')
+        ControlPanelGUI.createEnButton(self, self.root, 3, 2, 'SCAL', 'EN')
         ControlPanelGUI.createZeroButton(self, self.root, 4, 2, 'SCAL', 'ZERO')
 
         fsrLabel=tk.Label(self.root)
@@ -185,8 +191,17 @@ class ControlPanelGUI(threading.Thread):
         fsrLabel["fg"] = "#000000"
         fsrLabel["text"] = "Force Sensors"
         fsrLabel.grid(row = 2, column = 3, sticky='s')
-        ControlPanelGUI.createCalButton(self, self.root, 3, 3, 'FSR', 'CAL')
+        ControlPanelGUI.createEnButton(self, self.root, 3, 3, 'FSR', 'EN')
         ControlPanelGUI.createZeroButton(self, self.root, 4, 3, 'FSR', 'ZERO')
+
+        imuLabel=tk.Label(self.root)
+        imuLabel["font"] = tkFont.Font(family='Helvetica', size=10)
+        #nameLabel["bg"] = highlightColor
+        imuLabel["fg"] = "#000000"
+        imuLabel["text"] = "IMU Sensors"
+        imuLabel.grid(row = 2, column = 4, sticky='s')
+        ControlPanelGUI.createEnButton(self, self.root, 3, 4, 'IMU', 'EN')
+        ControlPanelGUI.createZeroButton(self, self.root, 4, 4, 'IMU', 'ZERO')
 
 
     def collectScreen(self):
@@ -214,15 +229,15 @@ class ControlPanelGUI(threading.Thread):
         nameLabel["font"] = tkFont.Font(family='Helvetica', weight="bold", size=14)
         nameLabel["fg"] = "#000000"
         nameLabel["justify"] = "center"
-        nameLabel["text"] = "Test Menu"
+        nameLabel["text"] = "Collection Menu"
         nameLabel.grid(row = 1, column = 0, columnspan = 6, sticky='ew')
 
-        nameLabel=tk.Label(self.root)
-        nameLabel["font"] = tkFont.Font(family='Helvetica', size=10)
-        nameLabel["fg"] = "#000000"
-        nameLabel["justify"] = "center"
-        nameLabel["text"] = "Status: LOGGING"
-        nameLabel.grid(row = 2, column = 0, columnspan = 6, sticky='n')
+        statusLabel=tk.Label(self.root)
+        statusLabel["font"] = tkFont.Font(family='Helvetica', size=10)
+        statusLabel["fg"] = "#000000"
+        statusLabel["justify"] = "center"
+        statusLabel["text"] = "Status: PAUSED"
+        statusLabel.grid(row = 2, column = 0, columnspan = 6, sticky='n')
 
         # START TESTING BUTTON
         start = Image.open("icons\play.png")
@@ -231,7 +246,7 @@ class ControlPanelGUI(threading.Thread):
         startButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=start)
         startButton.image = start
         startButton.grid(row = 3, column = 0, ipady=25, columnspan=2,  rowspan=2, sticky='ew')
-        startButton["command"] = self.startEvent
+        startButton["command"] = lambda: self.startEvent(statusLabel)
 
         # STOP TESTING BUTTON
         stop = Image.open("icons\pause.png")
@@ -240,57 +255,133 @@ class ControlPanelGUI(threading.Thread):
         stopButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=stop)
         stopButton.image = stop
         stopButton.grid(row = 3, column = 2, ipady=25, columnspan=3,  rowspan=2, sticky='ew')
-        stopButton["command"] = self.stopEvent
+        stopButton["command"] = lambda: self.stopEvent(statusLabel)
 
 
-    def loadCalibrateMenu(self):
-        print("GO TO CALIBRATE MENU")
+    def loadConfigureMenu(self):
+        #print("CONFIGURE MENU")
         self.clearGrid()
-        self.calibrateScreen()
+        self.configureScreen()
 
 
     def loadCollectMenu(self):
-        print("GO TO DATA COLLECTION MENU")
+        #print("DATA COLLECTION MENU")
         self.clearGrid()
         self.collectScreen()
 
 
     def loadHomeMenu(self):
-        print("GO TO HOME MENU")
-        self.poll_data_en = False
-        self.poll_status_en = False
+        #print("HOME MENU")
+        self.collect_en = False
         self.clearGrid()
         self.bootScreen()
 
 
     def saveToUSB(self):
-        print("Save Data to USB")
+        #print("SAVING DATA TO USB")
         self.save_thread = threading.Thread(target=self.mcuComms.saveUSB)
         self.save_thread.join()
+    
+
+    def startEvent(self, status):
+        #print("START DATA COLLECTION")
+        if not self.collect_en:
+            self.collect_en = True
+            self.data_thread = threading.Thread(target=self.mcuComms.poll_data, args=(lambda : self.collect_en, ))
+            self.status_thread = threading.Thread(target=self.mcuComms.poll_status, args=(lambda : self.collect_en, ))
+            self.data_thread.start()
+            self.status_thread.start()
+            # TODO: tell MCU to start sending data
+            status["text"] = "Status: LOGGING"
+
+
+    def stopEvent(self, status):
+        #print("STOP DATA COLLECTION")
+        if self.collect_en:
+            # TODO: tell MCU to stop sending data
+            self.collect_en = False
+            self.data_thread.join()
+            self.status_thread.join()
+            status["text"] = "Status: PAUSED"
         
 
-    def startEvent(self):
-        if not self.poll_status_en:
-            print("Start collecting data")
-            self.poll_status_en = True
-            self.status_thread = threading.Thread(target=self.mcuComms.poll_data, args=(lambda : self.poll_status_en, ))
-            self.status_thread.start()
+    def isSensorEnabled(self, sensor):
+        if (sensor == "OB"):
+            return self.obEnFlag
+        if (sensor == "SCAL"):
+            return self.scaleEnFlag
+        if (sensor == "FSR"):
+            return self.fsrEnFlag
+        if (sensor == "IMU"):
+            return self.imuEnFlag
+
+
+    def enSensor(self, sensor, type, button):
+        # Toggle the enable flag and set the locations.
+        locations = []
+        if sensor == "OB":
+            self.obEnFlag = not self.isSensorEnabled(sensor)
+            locations.append("H")
+            locations.append("B")
+        elif sensor == "SCAL":
+            self.scaleEnFlag = not self.isSensorEnabled(sensor)
+            locations.append("CH")
+        elif sensor == "FSR":
+            self.fsrEnFlag = not self.isSensorEnabled(sensor)
+            locations.append("LR")
+            locations.append("RR")
+            locations.append("LH")
+            locations.append("RH")
+            locations.append("LF")
+            locations.append("RF")
+            locations.append("LK")
+            locations.append("RK")
+        elif sensor == "IMU":
+            self.imuEnFlag = not self.isSensorEnabled(sensor)
+            locations.append("LL")
+            locations.append("RL")
+
+        if (self.isSensorEnabled(sensor)):
+            # Enable sensor.
+            button["bg"] = self.highlightColor
+            button["text"] = "DISABLE"
+            for loc in locations:
+                self.mcuComms.send_cmd(sensor, loc, type, "1")
         else:
-            print("Already collecting data!")
-
-
-    def stopEvent(self):
-        print("Stop collecting data")
-        self.poll_status_en = False
-        self.status_thread.join()
-
-
-    def calSensor(self, sensor, type):
-        print("calibrate sensor: " + sensor + ", " + type)
+            # Disable sensor.
+            button["bg"] = self.grayColor
+            button["text"] = "ENABLE"
+            for loc in locations:
+                self.mcuComms.send_cmd(sensor, loc, type, "0")
 
 
     def zeroSensor(self, sensor, type):
-        print("zero sensor: " + sensor + ", " + type)
+        #print("ZEROING: " + sensor + ", " + type)
+        if (self.isSensorEnabled(sensor)):
+            locations = []
+            if sensor == "OB":
+                locations.append("H")
+                locations.append("B")
+            elif sensor == "SCAL":
+                locations.append("CH")
+            elif sensor == "FSR":
+                locations.append("LR")
+                locations.append("RR")
+                locations.append("LH")
+                locations.append("RH")
+                locations.append("LF")
+                locations.append("RF")
+                locations.append("LK")
+                locations.append("RK")
+            elif sensor == "IMU":
+                locations.append("LL")
+                locations.append("RL")
+            
+            for loc in locations:
+                if sensor == "OB" or sensor == "IMU":
+                    self.mcuComms.send_cmd(sensor, loc, type, "1>1")
+                else:
+                    self.mcuComms.send_cmd(sensor, loc, type, "")
         
 
 if __name__ == "__main__":

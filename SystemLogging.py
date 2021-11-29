@@ -19,7 +19,7 @@
 #########################################################################################
 
 from LogData import LogData
-import os
+import os, datetime
 
 # Create Encoding Value <-> File Name mapping for simplicity
 # Sensor Type Maping
@@ -65,9 +65,12 @@ COMMANDS = {
             'FSR' :  ['LR', 'RR', 'LH', 'RH', 'LF', 'RF', 'LK', 'RK']
            }
 
+global start_datetime
+start_datetime = datetime.datetime.now()
+
 class SystemLogging(object):
     # Save standard folder name
-    baseFolderName= "PSPAS_Trial"
+    baseFolderName= "PSPAS_Logs"
 
     # Initialize SystemLogging Class Variables
     #def __init__(self):
@@ -93,12 +96,12 @@ class SystemLogging(object):
 
         # Initialize values for base folder
         i = 0
-        self.folderName = SystemLogging.baseFolderName + " (" + str(i) + ")"
+        self.folderName = SystemLogging.baseFolderName + "_" + str(i)
 
         # Loop until unique folder value is found
         while True:
             if os.path.exists(self.folderName):
-                self.folderName = SystemLogging.baseFolderName + " (" + str(i) + ")"
+                self.folderName = SystemLogging.baseFolderName + "_" + str(i)
                 i+=1
             else:   
                 break
@@ -110,7 +113,7 @@ class SystemLogging(object):
             os.makedirs( os.path.join(self.folderName, SENSORS[sensor]) )
 
     def getFoldername(self):
-        return self.baseFolderName
+        return self.folderName
 
     def encodeLogData(logData):
         """
@@ -165,7 +168,10 @@ class SystemLogging(object):
     
         # sensor.txt file the input log value
         with open(os.path.join(self.folderName, sensorType,(location + "_" + dataType + ".txt")), 'a') as file:
-            file.write("LOG\t" + data +"\n")
+            now = datetime.datetime.now()
+            normalized = now - datetime.timedelta(hours=start_datetime.hour, minutes=start_datetime.minute)
+            stamp = normalized.strftime("[%H:%M:%S.%f] ")
+            file.write(stamp + data + "\n")
 
 
     def populateStatus(self, logData):
@@ -193,6 +199,9 @@ class SystemLogging(object):
         splitData = encode.split('>')
 
         # Section encoded input into data types
+        if (len(splitData) <= 3):
+            return None
+
         encode_sensorType = splitData[0]
         encode_sensorLocale = splitData[1]
         encode_dataType = splitData[2]
@@ -242,10 +251,6 @@ class SystemLogging(object):
             dataType = 'rotation'
             data = "x: " + encode_data[0] + ",\ty: " +  encode_data[1] + ",\tz: " + encode_data[2]
         # STATUSES
-        elif (encode_dataType == 'LOG') and (encode_dataSize == 1):
-            status = True
-            dataType = 'logging enabled'
-            data = "Enable: " + encode_data[0]
         elif (encode_dataType == 'EN') and (encode_dataSize == 1):
             status = True
             dataType = 'enabled'
@@ -306,11 +311,13 @@ class SystemLogging(object):
             
             # Determine individual data value from string
             splitData = data.split(',\t')
-            d1 = splitData[0][3:]
-            d2 = splitData[1][3:]
-            d3 = splitData[2][3:]
-
-            encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+            if (len(splitData) < 3):
+                return "ERROR"
+            else:
+                d1 = splitData[0][3:]
+                d2 = splitData[1][3:]
+                d3 = splitData[2][3:]
+                encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
 
         elif dataType == 'orientation':
             encodedString += 'EUL'
@@ -320,11 +327,13 @@ class SystemLogging(object):
             
             # Determine individual data value from string
             splitData = data.split(',\t')
-            d1 = splitData[0][9:]
-            d2 = splitData[1][6:]
-            d3 = splitData[2][7:]
-
-            encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+            if (len(splitData) < 3):
+                return "ERROR"
+            else:
+                d1 = splitData[0][9:]
+                d2 = splitData[1][6:]
+                d3 = splitData[2][7:]
+                encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
             
         elif dataType == 'force':
             encodedString += 'FRC'
@@ -341,11 +350,13 @@ class SystemLogging(object):
             
             # Determine individual data value from string
             splitData = data.split(',\t')
-            d1 = splitData[0][3:]
-            d2 = splitData[1][3:]
-            d3 = splitData[2][3:]
-
-            encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+            if (len(splitData) < 3):
+                return "ERROR"
+            else:
+                d1 = splitData[0][3:]
+                d2 = splitData[1][3:]
+                d3 = splitData[2][3:]
+                encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
 
         elif dataType == 'logging enabled':
             encodedString += 'LOG'
@@ -369,12 +380,14 @@ class SystemLogging(object):
             
             # Determine individual data value from string
             splitData = data.split(',\t')
-            d1 = splitData[0][3:]
-            d2 = splitData[1][3:]
-            d3 = splitData[2][3:]
-            d4 = splitData[3][3:]
-
-            encodedString +=  ( d1 + '>' + d2 + '>' + d3 + '>' + d4 )
+            if (len(splitData) < 4):
+                return "ERROR"
+            else:
+                d1 = splitData[0][3:]
+                d2 = splitData[1][3:]
+                d3 = splitData[2][3:]
+                d4 = splitData[3][3:]
+                encodedString +=  ( d1 + '>' + d2 + '>' + d3 + '>' + d4 )
         
         elif dataType == 'offset':
             encodedString += 'OFF'
@@ -385,11 +398,13 @@ class SystemLogging(object):
             if sensorType == 'OB':
                 # Determine individual data value from string
                 splitData = data.split(',\t')
-                d1 = splitData[0][3:]
-                d2 = splitData[1][3:]
-                d3 = splitData[2][3:]
-
-                encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
+                if (len(splitData) < 3):
+                    return "ERROR"
+                else:
+                    d1 = splitData[0][3:]
+                    d2 = splitData[1][3:]
+                    d3 = splitData[2][3:]
+                    encodedString +=  ( d1 + '>' + d2 + '>' + d3 )
 
             if sensorType == 'SCAL':
                 encodedString += data.split(': ')[1] 
