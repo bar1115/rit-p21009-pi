@@ -25,9 +25,9 @@ class DEBUG_Print():
 class MCU_Comms():
 
     # Constants
-    DEBUG           = True
-    SERIAL_PORT     = "COM12"
-    #SERIAL_PORT     = "/dev/ttyS0"
+    DEBUG           = False
+    #SERIAL_PORT     = "COM12"
+    SERIAL_PORT     = "/dev/ttyS0"
     SERIAL_BAUD     = 576000
     SERIAL_TIMEOUT  = 0.1
     ETHERNET_IP     = "169.254.108.19"
@@ -54,7 +54,7 @@ class MCU_Comms():
         SystemLogging.createFolderStructure(systemLogging)
 
         # Sleep for 5s to wait for MCU to bootup and initialize
-        #time.sleep(5)
+        time.sleep(5)
 
         # On startup, send stored presets over to MCU
         with open("PRESETS.txt", 'r') as file:

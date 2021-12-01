@@ -79,20 +79,20 @@ class ControlPanelGUI(threading.Thread):
 
 
     def createEnButton(self, root, r, c, sensor, type):
-        enButton=tk.Button(root, width=20)
+        enButton=tk.Button(root, height=3, width=20)
         enButton["bg"] = ControlPanelGUI.highlightColor
         enButton["font"] = tkFont.Font(family='Helvetica', size=12)
         enButton["text"] = "DISABLE"
-        enButton.grid(row = r, column = c, sticky='n', padx=10, ipady=7)
+        enButton.grid(row = r, column = c, sticky='n', padx=10, ipady=10)
         enButton["command"] = lambda: self.enSensor(sensor, type, enButton)
 
 
     def createZeroButton(self, root, r, c, sensor, type):
-        zeroButton=tk.Button(root, width=20)
+        zeroButton=tk.Button(root, height=3, width=20)
         zeroButton["bg"] = ControlPanelGUI.highlightColor
         zeroButton["font"] = tkFont.Font(family='Helvetica', size=12)
         zeroButton["text"] = "ZERO"
-        zeroButton.grid(row = r, column = c, sticky='n', padx=10, ipady=10)
+        zeroButton.grid(row = r, column = c, sticky='n', padx=10, pady=20, ipady=10)
         zeroButton["command"] = lambda: self.zeroSensor(sensor, type)
 
 
@@ -240,21 +240,21 @@ class ControlPanelGUI(threading.Thread):
         statusLabel.grid(row = 2, column = 0, columnspan = 6, sticky='n')
 
         # START TESTING BUTTON
-        start = Image.open("icons\play.png")
+        start = Image.open("icons/play.png")
         start = start.resize((75, 75), Image.ANTIALIAS)
         start = ImageTk.PhotoImage(start)       
         startButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=start)
         startButton.image = start
-        startButton.grid(row = 3, column = 0, ipady=25, columnspan=2,  rowspan=2, sticky='ew')
+        startButton.grid(row = 3, column = 0, pady=50, ipady=25, columnspan=2,  rowspan=2, sticky='ew')
         startButton["command"] = lambda: self.startEvent(statusLabel)
 
         # STOP TESTING BUTTON
-        stop = Image.open("icons\pause.png")
+        stop = Image.open("icons/pause.png")
         stop = stop.resize((75, 75), Image.ANTIALIAS)
         stop = ImageTk.PhotoImage(stop)       
         stopButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=stop)
         stopButton.image = stop
-        stopButton.grid(row = 3, column = 2, ipady=25, columnspan=3,  rowspan=2, sticky='ew')
+        stopButton.grid(row = 3, column = 2, pady=50, ipady=25, columnspan=3,  rowspan=2, sticky='ew')
         stopButton["command"] = lambda: self.stopEvent(statusLabel)
 
 
