@@ -5,14 +5,15 @@ systemLogging = SystemLogging()
 SystemLogging.createFolderStructure(systemLogging)
 
 folderName = systemLogging.getFoldername()
-# Create mount-point
-os.system("sudo mkdir /media/usb")
-
-# Mount drive
-os.system("sudo mount /dev/sda1 /media/usb -o uid=pi,gid=pi")
+baseFolderName = folderName
+i = 0
 
 # Copy folder to usb mount-point
-os.system("sudo \cp -r " + folderName + " /media/usb")
+while True:
+            if os.path.exists(folderName):
+                folderName = baseFolderName + " " + str(i)
+                i+=1
+            else:   
+                break
 
-# Unmount Drive
-os.system("sudo unmount /media/usb")
+os.system("sudo \cp -r " + folderName + " /media/usb")
