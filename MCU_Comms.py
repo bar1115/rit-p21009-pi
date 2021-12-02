@@ -147,22 +147,6 @@ class MCU_Comms():
 
         folderName = systemLogging.getFoldername()
 
-        # Manually mount USB drive
-        # TODO run this line on the pi + find USBs unique ID (sda1)
-        # os.system("ls -l /dev/disk/by-uuid/")
-
-        # Create mount-point
-        os.system("sudo mkdir /media/usb")
-
-        # Give folder ownersip to pi for editability
-        os.system("sudo chown -R pi:pi /media/usb")
-
-        # Mount drive
-        os.system("sudo mount /dev/sda1 /media/usb -o uid=pi,gid=pi")
-
-        # Save current test folder to drive
         # Copy folder to usb mount-point
         os.system("sudo cp " + folderName + " /media/usb")
 
-        # Unmount drive
-        os.system("sudo unmount /media/usb")
