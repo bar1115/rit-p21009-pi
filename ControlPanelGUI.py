@@ -357,7 +357,7 @@ class ControlPanelGUI(threading.Thread):
 
 
     def zeroSensor(self, sensor, type):
-        print("ZEROING: " + sensor + ", " + type)
+        #print("ZEROING: " + sensor + ", " + type)
         if (self.isSensorEnabled(sensor)):
             locations = []
             if sensor == "OB":

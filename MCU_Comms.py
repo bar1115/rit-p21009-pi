@@ -143,17 +143,12 @@ class MCU_Comms():
         msg = sensor + '>' + location + '>' + type
         if cmd != "":
             msg += '>' + cmd
-
-        print(msg)
         msg += '\n'
         uart.write(msg.encode())
         time.sleep(.2)
 
 
     def saveUSB(self):
-
         folderName = systemLogging.getFoldername()
-
-        # Copy folder to usb mount-point
-        os.system("sudo \cp -r " + folderName + " /media/usb")
-
+        if os.path.is_dir("/media/pi/PSPAS"):
+            os.system("sudo cp -r " + folderName + " /media/pi/PSPAS")
