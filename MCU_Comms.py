@@ -5,8 +5,8 @@
 #   Created : October ‎19, ‎2021                                                          #
 #                                                                                       #
 #   Description:                                                                        #
-#     Main program entry point for RIT MSD Team P21009 Raspberry Pi software.
-#     NXT FRDM-K64F MCU target.
+#     Main program entry point for RIT MSD Team P21009 Raspberry Pi software.           #
+#     NXT FRDM-K64F MCU target.                                                         #
 #                                                                                       #
 #########################################################################################
 
@@ -37,6 +37,11 @@ class MCU_Comms():
     DIR             = os.path.dirname(os.path.abspath(__file__)) 
 
     def __init__(self):
+        """
+        Initialize method for MCU_Comms. This establishes serial connections
+        between the NXP and the pi via ethernet/UART. As well, it creates the
+        System_Logging objects and folder structure to store the data in.
+        """
         
         global uart
         global ethernet
@@ -140,6 +145,15 @@ class MCU_Comms():
 
 
     def send_cmd(self, sensor, location, type, cmd):
+        """
+        Sends a command over UART
+
+        Args:
+            sensor (String): A sensors string name
+            location (String): A sensors string location
+            type (String): A sensors data type string (ie Force or Acceleration)
+            cmd (String): The command instruction to send
+        """
         msg = sensor + '>' + location + '>' + type
         if cmd != "":
             msg += '>' + cmd
@@ -149,6 +163,9 @@ class MCU_Comms():
 
 
     def saveUSB(self):
+        """
+        Saves the test folder to the external USB drive
+        """
         folderName = systemLogging.getFoldername()
         if os.path.is_dir("/media/pi/PSPAS"):
             os.system("sudo cp -r " + folderName + " /media/pi/PSPAS")

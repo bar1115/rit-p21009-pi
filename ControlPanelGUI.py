@@ -1,12 +1,13 @@
 #########################################################################################
 #                                                                                       #
 #   File    : ControlPanelGUI.py                                                        #
-#   Author  : Thomas Sosa (ts5630@rit.edu) & Rebecca Reich (bar1115@rit.edu)            #
-#   Created : ‎October ‎7, ‎2021                                   #    
+#   Author  : Rebecca Reich (bar1115@rit.edu) & Thomas Sosa (ts5630@rit.edu) &          #
+#   Created : ‎October ‎7, ‎2021                                                           #    
 #                                                                                       #
 #   Description:                                                                        #
 #     The Control Panel GUI, which creates the labels, buttons and button events        #   
-#     graphics on the systems touch-logoLabel controller                                #
+#     graphics on the systems touch-logoLabel controller. This will run as a thread     #
+#     in order to parallelize its functionality with the main control loop              #
 #                                                                                       #
 #########################################################################################
 
@@ -70,16 +71,37 @@ class ControlPanelGUI(threading.Thread):
     
 
     def run(self):
+        """
+        Begin the GUI starting with the bootScreen. This is nescessary for
+        threadding.
+        """
         self.bootScreen()
 
 
     def clearGrid(self):
+        """
+        The GUI is formatted within a 6x6 grid. In order to change screen menues, the
+        grid is cleared and repopulated with the following screens widgits.
+        This method is what does the clearing.
+        """
         # Clear all elements in the window
         for widget in self.root.winfo_children():
             widget.destroy()
 
 
     def createEnButton(self, root, r, c, sensor, type):
+        """
+        Create the EN button for the Calibration Menue. This simplifies the
+        populating the calibration menue
+
+        Args:
+            root (Tk): The tkinter object necessary to estable layout
+            r (int): Interger representing the grid-row
+            c (int): Interger representing the grid-column
+            sensor (String): Sensor's Name
+            type (String): Sensor's Type
+        """
+
         enButton=tk.Button(root, height=3, width=20)
         enButton["bg"] = ControlPanelGUI.highlightColor
         enButton["font"] = tkFont.Font(family='Helvetica', size=12)
@@ -89,6 +111,18 @@ class ControlPanelGUI(threading.Thread):
 
 
     def createZeroButton(self, root, r, c, sensor, type):
+        """
+        Create the ZERO button for the Calibration Menue. This simplifies the
+        populating the calibration menue
+
+        Args:
+            root (Tk): The tkinter object necessary to estable layout
+            r (int): Interger representing the grid-row
+            c (int): Interger representing the grid-column
+            sensor (String): Sensor's Name
+            type (String): Sensor's Type
+        """
+
         zeroButton=tk.Button(root, height=3, width=20)
         zeroButton["bg"] = ControlPanelGUI.highlightColor
         zeroButton["font"] = tkFont.Font(family='Helvetica', size=12)
@@ -98,6 +132,10 @@ class ControlPanelGUI(threading.Thread):
 
 
     def bootScreen( self ):
+        """
+        Populate the grid with the BOOT SCREEN 
+
+        """
 
         self.root.title("BOOT MENU")
 
@@ -144,6 +182,9 @@ class ControlPanelGUI(threading.Thread):
 
 
     def configureScreen(self):
+        """
+        Populate the grid with the CALIBRATION menu
+        """
 
         self.root.title("CONFIGURE MENU")
 
@@ -206,6 +247,9 @@ class ControlPanelGUI(threading.Thread):
 
 
     def collectScreen(self):
+        """
+        Populate the grid with the POLLING menue
+        """
 
         self.root.title("COLLECT DATA MENU")
 
@@ -260,18 +304,27 @@ class ControlPanelGUI(threading.Thread):
 
 
     def loadConfigureMenu(self):
+        """
+        BUTTON METHOD - Switch screens to Config Menue
+        """
         #print("CONFIGURE MENU")
         self.clearGrid()
         self.configureScreen()
 
 
     def loadCollectMenu(self):
+        """
+        BUTTON METHOD - Switch screens to Collect Menue
+        """
         #print("DATA COLLECTION MENU")
         self.clearGrid()
         self.collectScreen()
 
 
     def loadHomeMenu(self):
+        """
+        BUTTON METHOD - Switch screens to Home Menue
+        """
         #print("HOME MENU")
         self.collect_en = False
         self.mcuComms.send_cmd("SYS", "GLBL", "EN", "0\n")
@@ -280,11 +333,20 @@ class ControlPanelGUI(threading.Thread):
 
 
     def saveToUSB(self):
+        """
+        BUTTON METHOD - Call on MCU_Comms to save test to USB Stick
+        """
         #print("SAVING DATA TO USB")
         self.mcuComms.saveUSB()
     
 
     def startEvent(self, status):
+        """
+        BUTTON METHOD - Begin data polling
+
+        Args:
+            status (boolean): Is data polling(?) flag
+        """
         #print("START DATA COLLECTION")
         if not self.collect_en:
             self.collect_en = True
@@ -297,6 +359,12 @@ class ControlPanelGUI(threading.Thread):
 
 
     def stopEvent(self, status):
+        """
+        BUTTON METHOD - Stop data polling
+
+        Args:
+            status (boolean): Is data polling(?) flag
+        """
         #print("STOP DATA COLLECTION")
         if self.collect_en:
             self.mcuComms.send_cmd("SYS", "GLBL", "EN", "0\n")
@@ -307,6 +375,15 @@ class ControlPanelGUI(threading.Thread):
         
 
     def isSensorEnabled(self, sensor):
+        """
+        Get sensor enable(?) flag
+
+        Args:
+            sensor (String): Sensor's Name
+
+        Returns:
+            [boolean]: Flag as to whether or not the sensor in question is enabled
+        """
         if (sensor == "OB"):
             return self.obEnFlag
         if (sensor == "SCAL"):
@@ -318,6 +395,14 @@ class ControlPanelGUI(threading.Thread):
 
 
     def enSensor(self, sensor, type, button):
+        """
+        Enable the sensor
+
+        Args:
+            sensor (String): The string name of the sensor
+            type (String): The string type of the sensor
+            button (String): The button the sensor correlates to
+        """
         # Toggle the enable flag and set the locations.
         locations = []
         if sensor == "OB":
@@ -357,6 +442,15 @@ class ControlPanelGUI(threading.Thread):
 
 
     def zeroSensor(self, sensor, type):
+        """
+        Zero the sensor
+
+        Args:
+            sensor (String): The string name of the sensor
+            type (String): The string type of the sensor
+
+        """
+
         #print("ZEROING: " + sensor + ", " + type)
         if (self.isSensorEnabled(sensor)):
             locations = []
@@ -386,6 +480,9 @@ class ControlPanelGUI(threading.Thread):
         
 
 if __name__ == "__main__":
+    """
+    Main Method
+    """
     root = tk.Tk()
     gui_thread = ControlPanelGUI(root)
     root.mainloop()

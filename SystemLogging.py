@@ -115,6 +115,13 @@ class SystemLogging(object):
             os.makedirs( os.path.join(self.folderName, SENSORS[sensor]) )
 
     def getFoldername(self):
+        """
+        A simple get-method which retruns the foldername of this individual System Logging object
+        This method is soley used in MCU_COMS to export log data to a USB
+
+        Returns:
+            [String]: The folderName for this system logging object
+        """
         return self.folderName
 
     def encodeLogData(logData):
@@ -177,7 +184,8 @@ class SystemLogging(object):
 
 
     def populateStatus(self, logData):
-        """[summary]
+        """
+        Populates the calibration status data into the CALIBRATION_PRESETS.txt file
 
         Args:
             logData (LogData): A LogData object containing the decoded data
@@ -190,13 +198,14 @@ class SystemLogging(object):
 
 
     def parseEncoding(encode):
-        """[summary]
+        """
+        Parses an encoded string recieved from the NXP and converts it to a logData object for easy handling 
 
         Args:
-            encode ([type]): [description]
+            encode (String): An encoded string recieved from the NXP to the Pi
 
         Returns:
-            [type]: [description]
+            [logData] : A LogData object containing the decoded data
         """
         splitData = encode.split('>')
 
@@ -272,13 +281,14 @@ class SystemLogging(object):
 
 
     def generateEncoding( logData ):
-        """[summary]
+        """
+        Converts a logData object into an encoded string much like the ones recieved from the NXP
 
         Args:
             logData (LogData): A LogData object containing the decoded data
 
         Returns:
-            [type]: [description]
+            encode (String): An encoded string recieved from the NXP to the Pi
         """
 
         encodedString = ''
