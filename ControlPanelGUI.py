@@ -24,6 +24,7 @@ class ControlPanelGUI(threading.Thread):
     WIDTH       = 480
     HEIGHT      = 320
     GRID_DIM    = 6
+    DIR         = os.path.dirname(os.path.abspath(__file__)) 
     
     def __init__(self, root):
         """
@@ -100,7 +101,7 @@ class ControlPanelGUI(threading.Thread):
 
         self.root.title("BOOT MENU")
 
-        logo = Image.open("icons/logo.png")
+        logo = Image.open(self.DIR + "/icons/logo.png")
         logo = logo.resize((140, 50), Image.ANTIALIAS)
         logo = ImageTk.PhotoImage(logo)
         logoLabel = Label(self.root, image=logo)
@@ -147,7 +148,7 @@ class ControlPanelGUI(threading.Thread):
         self.root.title("CONFIGURE MENU")
 
         # Place LOGO
-        logo = Image.open("icons/logo.png")
+        logo = Image.open(self.DIR + "/icons/logo.png")
         logo = logo.resize((140, 50), Image.ANTIALIAS)
         logo = ImageTk.PhotoImage(logo)
         logoLabel = Label(self.root, image=logo)
@@ -155,7 +156,7 @@ class ControlPanelGUI(threading.Thread):
         logoLabel.grid(row = 0, column = 0, padx=10, ipady=10, sticky='nw', columnspan=2)
 
         # Place HOME Button
-        home = Image.open("icons/home.png")
+        home = Image.open(self.DIR + "/icons/home.png")
         home = home.resize((50, 50), Image.ANTIALIAS)
         home = ImageTk.PhotoImage(home)       
         homeButton=tk.Button(self.root, bd=0, image=home)
@@ -209,7 +210,7 @@ class ControlPanelGUI(threading.Thread):
         self.root.title("COLLECT DATA MENU")
 
         # Place LOGO
-        logo = Image.open("icons/logo.png")
+        logo = Image.open(self.DIR + "/icons/logo.png")
         logo = logo.resize((140, 50), Image.ANTIALIAS)
         logo = ImageTk.PhotoImage(logo)
         logoLabel = Label(self.root, image=logo)
@@ -217,7 +218,7 @@ class ControlPanelGUI(threading.Thread):
         logoLabel.grid(row = 0, column = 0, padx=10, ipady=10, sticky='nw', columnspan=2)
 
         # Place HOME Button
-        home = Image.open("icons/home.png")
+        home = Image.open(self.DIR + "/icons/home.png")
         home = home.resize((50, 50), Image.ANTIALIAS)
         home = ImageTk.PhotoImage(home)       
         homeButton=tk.Button(self.root, bd=0, image=home)
@@ -240,7 +241,7 @@ class ControlPanelGUI(threading.Thread):
         statusLabel.grid(row = 2, column = 0, columnspan = 6, sticky='n')
 
         # START TESTING BUTTON
-        start = Image.open("icons/play.png")
+        start = Image.open(self.DIR + "/icons/play.png")
         start = start.resize((75, 75), Image.ANTIALIAS)
         start = ImageTk.PhotoImage(start)       
         startButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=start)
@@ -249,7 +250,7 @@ class ControlPanelGUI(threading.Thread):
         startButton["command"] = lambda: self.startEvent(statusLabel)
 
         # STOP TESTING BUTTON
-        stop = Image.open("icons/pause.png")
+        stop = Image.open(self.DIR + "/icons/pause.png")
         stop = stop.resize((75, 75), Image.ANTIALIAS)
         stop = ImageTk.PhotoImage(stop)       
         stopButton=tk.Button(self.root, bd=0, bg=ControlPanelGUI.highlightColor, image=stop)
@@ -273,14 +274,14 @@ class ControlPanelGUI(threading.Thread):
     def loadHomeMenu(self):
         #print("HOME MENU")
         self.collect_en = False
+        self.mcuComms.send_cmd("SYS", "GLBL", "EN", "0\n")
         self.clearGrid()
         self.bootScreen()
 
 
     def saveToUSB(self):
         #print("SAVING DATA TO USB")
-        self.save_thread = threading.Thread(target=self.mcuComms.saveUSB)
-        self.save_thread.join()
+        self.mcuComms.saveUSB()
     
 
     def startEvent(self, status):
@@ -288,20 +289,20 @@ class ControlPanelGUI(threading.Thread):
         if not self.collect_en:
             self.collect_en = True
             self.data_thread = threading.Thread(target=self.mcuComms.poll_data, args=(lambda : self.collect_en, ))
-            self.status_thread = threading.Thread(target=self.mcuComms.poll_status, args=(lambda : self.collect_en, ))
+            #self.status_thread = threading.Thread(target=self.mcuComms.poll_status, args=(lambda : self.collect_en, ))
             self.data_thread.start()
-            self.status_thread.start()
-            # TODO: tell MCU to start sending data
+            #self.status_thread.start()
+            self.mcuComms.send_cmd("SYS", "GLBL", "EN", "1\n")
             status["text"] = "Status: LOGGING"
 
 
     def stopEvent(self, status):
         #print("STOP DATA COLLECTION")
         if self.collect_en:
-            # TODO: tell MCU to stop sending data
+            self.mcuComms.send_cmd("SYS", "GLBL", "EN", "0\n")
             self.collect_en = False
-            self.data_thread.join()
-            self.status_thread.join()
+            #self.data_thread.join()
+            #self.status_thread.join()
             status["text"] = "Status: PAUSED"
         
 
@@ -356,7 +357,7 @@ class ControlPanelGUI(threading.Thread):
 
 
     def zeroSensor(self, sensor, type):
-        #print("ZEROING: " + sensor + ", " + type)
+        print("ZEROING: " + sensor + ", " + type)
         if (self.isSensorEnabled(sensor)):
             locations = []
             if sensor == "OB":

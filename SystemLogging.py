@@ -38,6 +38,8 @@ LOCATIONS = {
             'CH':'chest',
             'LR':'leftRib',
             'RR':'rightRib',
+            'LH':'leftHip',
+            'RH':'rightHip',
             'LF':'leftForearm',
             'RF':'rightForearm',
             'LK':'leftKnee',
@@ -70,7 +72,7 @@ start_datetime = datetime.datetime.now()
 
 class SystemLogging(object):
     # Save standard folder name
-    baseFolderName= "PSPAS_Logs"
+    baseFolderName  = os.path.dirname(os.path.abspath(__file__)) + "/PSPAS_Logs"
 
     # Initialize SystemLogging Class Variables
     #def __init__(self):
@@ -224,7 +226,6 @@ class SystemLogging(object):
         if sensorType == '':
             return None
 
-        # Determine Sensor Location (verbose) using Location Mapping
         for sl in LOCATIONS:
           if encode_sensorLocale == sl:
               location = LOCATIONS[sl]
@@ -234,10 +235,10 @@ class SystemLogging(object):
         if location == '':
             return None
 
+
         # Determine Data Type and Format Data based on Data Type/Statuses; If status type, set status flag (verbose)
         # DATA TYPE
         encode_dataSize = len(encode_data)
-
         if   (encode_dataType == 'ACC') and (encode_dataSize == 3):
             dataType = 'acceleration'
             data = "x: " + encode_data[0] + ",\ty: " +  encode_data[1] + ",\tz: " + encode_data[2]
@@ -264,7 +265,7 @@ class SystemLogging(object):
             dataType = 'offset'
             data = "GYR: " + encode_data[0] + ",\tACC: " +  encode_data[1] + ",\tMAG: " + encode_data[2]
         else:
-            # Invalid Encodding - Return None and handle outside
+            # Invalid Encoding - Return None and handle outside
             return None
 
         return LogData( sensorType=sensorType, location=location, dataType=dataType, dataLog=data, dataRaw=encode_data, status=status)

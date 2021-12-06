@@ -28,11 +28,13 @@ class MCU_Comms():
     DEBUG           = False
     #SERIAL_PORT     = "COM12"
     SERIAL_PORT     = "/dev/ttyS0"
-    SERIAL_BAUD     = 576000
+    SERIAL_BAUD     = 230400
     SERIAL_TIMEOUT  = 0.1
-    ETHERNET_IP     = "169.254.108.19"
+    ETHERNET_IP     = "169.254.180.193"
     ETHERNET_PORT   = 37
     MAX_STR_LENGTH  = 256
+
+    DIR             = os.path.dirname(os.path.abspath(__file__)) 
 
     def __init__(self):
         
@@ -44,6 +46,7 @@ class MCU_Comms():
 
             # Establish Ethernet connection via UDP server socket
             ethernet = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ethernet.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             ethernet.bind((self.ETHERNET_IP, self.ETHERNET_PORT))
         else:
             uart = DEBUG_Print()
@@ -54,10 +57,9 @@ class MCU_Comms():
         SystemLogging.createFolderStructure(systemLogging)
 
         # Sleep for 5s to wait for MCU to bootup and initialize
-        time.sleep(5)
 
         # On startup, send stored presets over to MCU
-        with open("PRESETS.txt", 'r') as file:
+        with open(self.DIR + "/PRESETS.txt", 'r') as file:
             for line in file:
                 uart.write(line.encode())
 
@@ -77,27 +79,30 @@ class MCU_Comms():
             rcv = ""
             if not self.DEBUG:
                 # Read incoming Ethernet data
-                rcv = ethernet.recvfrom(self.MAX_STR_LENGTH)
+                rcv,addr = ethernet.recvfrom(self.MAX_STR_LENGTH)
             else:
                 rcv = b'OB>H>EUL>1>2>3\n'
 
             # Try to decode the message.
             try:
                 # Byte String properly formed & decoded
-                str = rcv.decode() 
+                str = rcv.decode()
                 # Filter out miscellaneous characters that may exist at the end of the packet.
                 str = str[:len(str)-1]
-                # Since its properly recieved, process and save encoding accordingly
-                parsedEncoding = SystemLogging.parseEncoding(str)
-                # Error Check that encoding was properly formatted
-                if parsedEncoding != None:
-                    # Write to file
-                    SystemLogging.populateLog(systemLogging, parsedEncoding)                        
+                # Multiple messages may be in this string. Split on LF and process each.
+                splitStr = str.split('\n')
+                for s in splitStr:
+                    # Since its properly recieved, process and save encoding accordingly
+                    parsedEncoding = SystemLogging.parseEncoding(s.strip())
+                    # Error Check that encoding was properly formatted
+                    if parsedEncoding != None:
+                        # Write to file
+                        SystemLogging.populateLog(systemLogging, parsedEncoding)
 
             # Cannot receive byte string
             except ValueError:
                 # Byte String malformed
-                print("WARNING: poll_data Malformed Byte String Encountered - Ignoring Data")
+                print("WARNING: poll_data Malformed Byte String Encountered - Ignoring Data. Received: ", rcv)
 
                 
     def poll_status(self, enable):
@@ -120,7 +125,7 @@ class MCU_Comms():
                 # Try to decode the message.
                 try:
                     # Byte String properly formed & decoded
-                    str = rcv.strip().decode() 
+                    str = rcv.decode() 
                     # Since its properly recieved, process and save encoding accordingly
                     parsedEncoding = SystemLogging.parseEncoding(str)
                     # Error Check that encoding was properly formatted
@@ -139,8 +144,10 @@ class MCU_Comms():
         if cmd != "":
             msg += '>' + cmd
 
+        print(msg)
         msg += '\n'
         uart.write(msg.encode())
+        time.sleep(.2)
 
 
     def saveUSB(self):
@@ -148,5 +155,5 @@ class MCU_Comms():
         folderName = systemLogging.getFoldername()
 
         # Copy folder to usb mount-point
-        os.system("sudo cp " + folderName + " /media/usb")
+        os.system("sudo \cp -r " + folderName + " /media/usb")
 
